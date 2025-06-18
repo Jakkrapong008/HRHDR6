@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงเวลาปฏิบัติราชการ - โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .btn-primary {
+            background-color: #e53e3e;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #c53030;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary {
+            background-color: #f7fafc;
+            color: #e53e3e;
+            border: 2px solid #e53e3e;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #fed7d7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .loader {
+            border-top-color: #e53e3e;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-6 flex flex-col items-center">
+            <img src="https://img2.pic.in.th/pic/logo-HDR.th.png" alt="โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์" class="h-24 mb-4">
+            <h1 class="text-3xl font-bold text-red-600 text-center">ระบบลงเวลาปฏิบัติราชการ</h1>
+            <h2 class="text-xl text-gray-700 text-center">โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์</h2>
+        </div>
+    </header>
+
+    <!-- Date and Time Display -->
+    <div class="bg-red-600 text-white py-3">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-center items-center space-y-2 md:space-y-0 md:space-x-8">
+            <div class="text-center md:text-right">
+                <span class="text-lg font-medium" id="current-date"></span>
+            </div>
+            <div class="text-center md:text-left">
+                <span class="text-lg font-medium" id="current-time"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+                <div class="loader h-12 w-12 rounded-full border-4 border-gray-200"></div>
+                <p class="mt-4 text-lg font-medium">กำลังโหลดข้อมูล...</p>
+            </div>
+        </div>
+
+        <!-- Main Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลามาปฏิบัติราชการ</h3>
+                <button id="btn-entry" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
+                    ลงเวลามาปฏิบัติราชการ
+                </button>
+            </div>
+            <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลากลับ</h3>
+                <button id="btn-departure" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
+                    ลงเวลากลับ
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Entry Summary -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลามาปฏิบัติราชการ</h3>
+                <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="w-full md:w-1/2">
+                        <canvas id="entry-chart" class="w-full"></canvas>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
+                        <div id="entry-missing" class="max-h-60 overflow-y-auto text-sm">
+                            <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Departure Summary -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลากลับ</h3>
+                <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="w-full md:w-1/2">
+                        <canvas id="departure-chart" class="w-full"></canvas>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
+                        <div id="departure-missing" class="max-h-60 overflow-y-auto text-sm">
+                            <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Entry Modal -->
+    <div id="entry-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลามาปฏิบัติราชการ</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="entry-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
+                    <select id="entry-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">-- เลือกรายชื่อ --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="entry-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
+                    <select id="entry-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="ลงเวลาปฏิบัติงาน">ลงเวลาปฏิบัติงาน</option>
+                        <option value="ลากิจ">ลากิจ</option>
+                        <option value="ลาป่วย">ลาป่วย</option>
+                        <option value="ลาคลอด">ลาคลอด</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="entry-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
+                    <button id="entry-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Departure Modal -->
+    <div id="departure-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลากลับ</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="departure-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
+                    <select id="departure-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <option value="">-- เลือกรายชื่อ --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="departure-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
+                    <select id="departure-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" disabled>
+                        <option value="ลงเวลากลับ">ลงเวลากลับ</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="departure-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
+                    <button id="departure-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-xl font-bold text-red-600 mb-4">ยืนยันการบันทึกข้อมูล</h3>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-gray-700 mb-1">รายชื่อ: <span id="confirm-name" class="font-medium"></span></p>
+                    <p class="text-gray-700 mb-1">สถานะ: <span id="confirm-status" class="font-medium"></span></p>
+                    <p class="text-gray-700 mb-1">เวลา: <span id="confirm-time" class="font-medium"></span></p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="confirm-edit" class="btn-secondary px-4 py-2 rounded-lg">แก้ไข</button>
+                    <button id="confirm-submit" class="btn-primary px-4 py-2 rounded-lg">ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert/Message Box -->
+    <div id="custom-alert-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-4 text-center">
+            <p id="custom-alert-message" class="text-gray-800 text-lg mb-4"></p>
+            <button id="custom-alert-ok" class="btn-primary px-6 py-2 rounded-lg">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        // IMPORTANT: Replace this with the Web App URL obtained after deploying your Google Apps Script
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwWg_D9jPB1man8Rg6Xvot2F2kfhbPy7GpTX-6U9fZ2hEpciBfUm3W2u5CAbGVT7y1MQA/exec'; 
+        let teacherData = [];
+        let entryChart = null;
+        let departureChart = null;
+        let currentModalType = '';
+        
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const entryModal = document.getElementById('entry-modal');
+        const departureModal = document.getElementById('departure-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const entryNameSelect = document.getElementById('entry-name');
+        const entryStatusSelect = document.getElementById('entry-status');
+        const departureNameSelect = document.getElementById('departure-name');
+        const confirmNameSpan = document.getElementById('confirm-name');
+        const confirmStatusSpan = document.getElementById('confirm-status');
+        const confirmTimeSpan = document.getElementById('confirm-time');
+        const customAlertModal = document.getElementById('custom-alert-modal');
+        const customAlertMessage = document.getElementById('custom-alert-message');
+        const customAlertOk = document.getElementById('custom-alert-ok');
+
+        // Function to show custom alert
+        function showAlert(message) {
+            customAlertMessage.textContent = message;
+            customAlertModal.classList.remove('hidden');
+        }
+
+        // Function to hide custom alert
+        function hideAlert() {
+            customAlertModal.classList.add('hidden');
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            fetchData();
+            setupEventListeners();
+        });
+        
+        // Update date and time display
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            };
+            
+            // Convert to Thai Buddhist Era (BE) by adding 543 years
+            const thaiYear = now.getFullYear() + 543;
+            const thaiDate = new Intl.DateTimeFormat('th-TH', options).format(now);
+            const formattedDate = thaiDate.replace(/\d{4}/, thaiYear);
+            
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const formattedTime = `${hours}:${minutes}:${seconds} น.`;
+            
+            document.getElementById('current-date').textContent = formattedDate;
+            document.getElementById('current-time').textContent = formattedTime;
+            
+            return {
+                date: formattedDate,
+                time: `${hours}:${minutes}:${seconds}`
+            };
+        }
+        
+        // Fetch data from Google Sheets
+        async function fetchData() {
+            try {
+                showLoading(true);
+                const response = await fetch(`${API_URL}?action=getData`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    teacherData = result.data;
+                    populateNameDropdowns();
+                    updateSummaries();
+                } else {
+                    console.error('Error fetching data:', result.message);
+                    showAlert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showAlert('เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Populate name dropdowns
+        function populateNameDropdowns() {
+            // Clear existing options except the first one
+            entryNameSelect.innerHTML = '<option value="">-- เลือกรายชื่อ --</option>';
+            departureNameSelect.innerHTML = '<option value="">-- เลือกรายชื่อ --</option>';
+            
+            // Add teacher names to dropdowns
+            teacherData.forEach(teacher => {
+                if (teacher.name) {
+                    const entryOption = document.createElement('option');
+                    entryOption.value = teacher.name;
+                    entryOption.textContent = teacher.name;
+                    entryNameSelect.appendChild(entryOption);
+                    
+                    const departureOption = document.createElement('option');
+                    departureOption.value = teacher.name;
+                    departureOption.textContent = teacher.name;
+                    departureNameSelect.appendChild(departureOption);
+                }
+            });
+        }
+        
+        // Update summary charts and missing lists
+        function updateSummaries() {
+            updateEntrySummary();
+            updateDepartureSummary();
+        }
+        
+        // Update entry summary
+        function updateEntrySummary() {
+            const recorded = teacherData.filter(teacher => teacher['Entry time'] && teacher.status1).length;
+            const missing = teacherData.length - recorded;
+            
+            // Update chart
+            if (entryChart) {
+                entryChart.data.datasets[0].data = [recorded, missing];
+                entryChart.update();
+            } else {
+                const ctx = document.getElementById('entry-chart').getContext('2d');
+                entryChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['ลงเวลาแล้ว', 'ยังไม่ได้ลงเวลา'],
+                        datasets: [{
+                            data: [recorded, missing],
+                            backgroundColor: ['#e53e3e', '#edf2f7'],
+                            borderColor: ['#c53030', '#cbd5e0'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Update missing list
+            const missingContainer = document.getElementById('entry-missing');
+            missingContainer.innerHTML = '';
+            
+            const missingTeachers = teacherData.filter(teacher => !teacher['Entry time'] || !teacher.status1);
+            if (missingTeachers.length === 0) {
+                missingContainer.innerHTML = '<p class="text-green-600">ทุกคนลงเวลาครบแล้ว</p>';
+            } else {
+                const list = document.createElement('ul');
+                list.className = 'list-disc pl-5';
+                missingTeachers.forEach(teacher => {
+                    if (teacher.name) {
+                        const item = document.createElement('li');
+                        item.textContent = teacher.name;
+                        list.appendChild(item);
+                    }
+                });
+                missingContainer.appendChild(list);
+            }
+        }
+        
+        // Update departure summary
+        function updateDepartureSummary() {
+            const recorded = teacherData.filter(teacher => teacher['Departure time'] && teacher.status2).length;
+            const missing = teacherData.length - recorded;
+            
+            // Update chart
+            if (departureChart) {
+                departureChart.data.datasets[0].data = [recorded, missing];
+                departureChart.update();
+            } else {
+                const ctx = document.getElementById('departure-chart').getContext('2d');
+                departureChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['ลงเวลาแล้ว', 'ยังไม่ได้ลงเวลา'],
+                        datasets: [{
+                            data: [recorded, missing],
+                            backgroundColor: ['#e53e3e', '#edf2f7'],
+                            borderColor: ['#c53030', '#cbd5e0'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Update missing list
+            const missingContainer = document.getElementById('departure-missing');
+            missingContainer.innerHTML = '';
+            
+            const missingTeachers = teacherData.filter(teacher => !teacher['Departure time'] || !teacher.status2);
+            if (missingTeachers.length === 0) {
+                missingContainer.innerHTML = '<p class="text-green-600">ทุกคนลงเวลาครบแล้ว</p>';
+            } else {
+                const list = document.createElement('ul');
+                list.className = 'list-disc pl-5';
+                missingTeachers.forEach(teacher => {
+                    if (teacher.name) {
+                        const item = document.createElement('li');
+                        item.textContent = teacher.name;
+                        list.appendChild(item);
+                    }
+                });
+                missingContainer.appendChild(list);
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Entry button
+            document.getElementById('btn-entry').addEventListener('click', () => {
+                entryModal.classList.remove('hidden');
+                currentModalType = 'entry';
+            });
+            
+            // Departure button
+            document.getElementById('btn-departure').addEventListener('click', () => {
+                departureModal.classList.remove('hidden');
+                currentModalType = 'departure';
+            });
+            
+            // Entry modal cancel button
+            document.getElementById('entry-cancel').addEventListener('click', () => {
+                entryModal.classList.add('hidden');
+                resetForm('entry');
+            });
+            
+            // Departure modal cancel button
+            document.getElementById('departure-cancel').addEventListener('click', () => {
+                departureModal.classList.add('hidden');
+                resetForm('departure');
+            });
+            
+            // Entry save button
+            document.getElementById('entry-save').addEventListener('click', () => {
+                const name = entryNameSelect.value;
+                const status = entryStatusSelect.value;
+                
+                if (!name) {
+                    showAlert('กรุณาเลือกรายชื่อ');
+                    return;
+                }
+                
+                const currentTime = updateDateTime();
+                const timeStr = currentTime.time;
+                
+                confirmNameSpan.textContent = name;
+                confirmStatusSpan.textContent = status;
+                confirmTimeSpan.textContent = timeStr;
+                
+                entryModal.classList.add('hidden');
+                confirmModal.classList.remove('hidden');
+            });
+            
+            // Departure save button
+            document.getElementById('departure-save').addEventListener('click', () => {
+                const name = departureNameSelect.value;
+                const status = 'ลงเวลากลับ'; // Fixed status for departure
+                
+                if (!name) {
+                    showAlert('กรุณาเลือกรายชื่อ');
+                    return;
+                }
+                
+                const currentTime = updateDateTime();
+                const timeStr = currentTime.time;
+                
+                confirmNameSpan.textContent = name;
+                confirmStatusSpan.textContent = status;
+                confirmTimeSpan.textContent = timeStr;
+                
+                departureModal.classList.add('hidden');
+                confirmModal.classList.remove('hidden');
+            });
+            
+            // Confirm edit button
+            document.getElementById('confirm-edit').addEventListener('click', () => {
+                confirmModal.classList.add('hidden');
+                if (currentModalType === 'entry') {
+                    entryModal.classList.remove('hidden');
+                } else {
+                    departureModal.classList.remove('hidden');
+                }
+            });
+            
+            // Confirm submit button
+            document.getElementById('confirm-submit').addEventListener('click', async () => {
+                const name = confirmNameSpan.textContent;
+                const status = confirmStatusSpan.textContent;
+                const time = confirmTimeSpan.textContent;
+                
+                try {
+                    showLoading(true);
+                    confirmModal.classList.add('hidden');
+                    
+                    // Create form data for submission
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('time', time);
+                    formData.append('status', status);
+                    
+                    if (currentModalType === 'entry') {
+                        formData.append('action', 'recordEntry');
+                    } else {
+                        formData.append('action', 'recordDeparture');
+                    }
+                    
+                    // Send data to Google Apps Script
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    // Parse response
+                    const text = await response.text();
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (e) {
+                        console.error('Failed to parse response:', text);
+                        throw new Error('Invalid response from server');
+                    }
+                    
+                    if (result.success) {
+                        showAlert('บันทึกข้อมูลสำเร็จ');
+                        resetForm(currentModalType);
+                        await fetchData(); // Refresh data
+                    } else {
+                        console.error('Error from server:', result);
+                        showAlert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถบันทึกข้อมูลได้'));
+                    }
+                } catch (error) {
+                    console.error('Error submitting data:', error);
+                    showAlert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
+                } finally {
+                    showLoading(false);
+                }
+            });
+
+            // Handle custom alert OK button click
+            customAlertOk.addEventListener('click', hideAlert);
+        }
+        
+        // Reset form fields
+        function resetForm(type) {
+            if (type === 'entry') {
+                entryNameSelect.value = '';
+                entryStatusSelect.value = 'ลงเวลาปฏิบัติงาน';
+            } else {
+                departureNameSelect.value = '';
+            }
+        }
+        
+        // Show/hide loading overlay
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.remove('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -54,159 +54,171 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <div class="container mx-auto px-4 py-6 flex flex-col items-center">
-            <img src="https://img2.pic.in.th/pic/logo-HDR.th.png" alt="โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์" class="h-24 mb-4">
-            <h1 class="text-3xl font-bold text-red-600 text-center">ระบบลงเวลาปฏิบัติราชการ</h1>
-            <h2 class="text-xl text-gray-700 text-center">โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์</h2>
-        </div>
-    </header>
-
-    <!-- Date and Time Display -->
-    <div class="bg-red-600 text-white py-3">
-        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-center items-center space-y-2 md:space-y-0 md:space-x-8">
-            <div class="text-center md:text-right">
-                <span class="text-lg font-medium" id="current-date"></span>
-            </div>
-            <div class="text-center md:text-left">
-                <span class="text-lg font-medium" id="current-time"></span>
-            </div>
+    <!-- Password Modal -->
+    <div id="password-modal" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-4 text-center">
+            <h3 class="text-2xl font-bold text-red-600 mb-6">กรุณากรอกรหัสผ่าน</h3>
+            <input type="password" id="password-input" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg mb-4 text-center focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="รหัสผ่าน">
+            <button id="password-submit" class="btn-primary w-full py-3 rounded-lg text-lg font-medium">เข้าสู่ระบบ</button>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
-                <div class="loader h-12 w-12 rounded-full border-4 border-gray-200"></div>
-                <p class="mt-4 text-lg font-medium">กำลังโหลดข้อมูล...</p>
+    <!-- Main Application Content (hidden by default) -->
+    <div id="app-content" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-4 py-6 flex flex-col items-center">
+                <img src="https://img2.pic.in.th/pic/logo-HDR.th.png" alt="โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์" class="h-24 mb-4">
+                <h1 class="text-3xl font-bold text-red-600 text-center">ระบบลงเวลาปฏิบัติราชการ</h1>
+                <h2 class="text-xl text-gray-700 text-center">โรงเรียนหางดงรัฐราษฎร์อุปถัมภ์</h2>
+            </div>
+        </header>
+
+        <!-- Date and Time Display -->
+        <div class="bg-red-600 text-white py-4">
+            <div class="container mx-auto px-4 flex flex-col md:flex-row justify-center items-center space-y-2 md:space-y-0 md:space-x-8">
+                <div class="text-center md:text-right">
+                    <!-- Increased font size to text-2xl for date -->
+                    <span class="text-2xl font-medium" id="current-date"></span>
+                </div>
+                <div class="text-center md:text-left">
+                    <!-- Increased font size to text-2xl for time -->
+                    <span class="text-2xl font-medium" id="current-time"></span>
+                </div>
             </div>
         </div>
 
-        <!-- Main Buttons -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+                    <div class="loader h-12 w-12 rounded-full border-4 border-gray-200"></div>
+                    <p class="mt-4 text-lg font-medium">กำลังโหลดข้อมูล...</p>
+                </div>
+            </div>
+
+            <!-- Main Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                    <button id="btn-entry" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
+                        ลงเวลามาปฏิบัติราชการ
+                    </button>
+                </div>
+                <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                    <button id="btn-departure" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
+                        ลงเวลากลับ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Entry Summary -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลามาปฏิบัติราชการ</h3>
+                    <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/2">
+                            <canvas id="entry-chart" class="w-full"></canvas>
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
+                            <div id="entry-missing" class="max-h-60 overflow-y-auto text-sm">
+                                <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Departure Summary -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลากลับ</h3>
+                    <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/2">
+                            <canvas id="departure-chart" class="w-full"></canvas>
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
+                            <div id="departure-missing" class="max-h-60 overflow-y-auto text-sm">
+                                <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Entry Modal -->
+        <div id="entry-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
                 <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลามาปฏิบัติราชการ</h3>
-                <button id="btn-entry" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
-                    ลงเวลามาปฏิบัติราชการ
-                </button>
+                <div class="space-y-4">
+                    <div>
+                        <label for="entry-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
+                        <select id="entry-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="">-- เลือกรายชื่อ --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="entry-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
+                        <select id="entry-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="ลงเวลาปฏิบัติงาน">ลงเวลาปฏิบัติงาน</option>
+                            <option value="ลากิจ">ลากิจ</option>
+                            <option value="ลาป่วย">ลาป่วย</option>
+                            <option value="ลาคลอด">ลาคลอด</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button id="entry-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
+                        <button id="entry-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
+                    </div>
+                </div>
             </div>
-            <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+        </div>
+
+        <!-- Departure Modal -->
+        <div id="departure-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
                 <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลากลับ</h3>
-                <button id="btn-departure" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
-                    ลงเวลากลับ
-                </button>
-            </div>
-        </div>
-
-        <!-- Summary Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Entry Summary -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลามาปฏิบัติราชการ</h3>
-                <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-                    <div class="w-full md:w-1/2">
-                        <canvas id="entry-chart" class="w-full"></canvas>
+                <div class="space-y-4">
+                    <div>
+                        <label for="departure-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
+                        <select id="departure-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="">-- เลือกรายชื่อ --</option>
+                        </select>
                     </div>
-                    <div class="w-full md:w-1/2">
-                        <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
-                        <div id="entry-missing" class="max-h-60 overflow-y-auto text-sm">
-                            <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
-                        </div>
+                    <div>
+                        <label for="departure-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
+                        <select id="departure-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" disabled>
+                            <option value="ลงเวลากลับ">ลงเวลากลับ</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Departure Summary -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลากลับ</h3>
-                <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-                    <div class="w-full md:w-1/2">
-                        <canvas id="departure-chart" class="w-full"></canvas>
-                    </div>
-                    <div class="w-full md:w-1/2">
-                        <h4 class="font-medium text-gray-700 mb-2">รายชื่อที่ยังไม่ได้ลงเวลา</h4>
-                        <div id="departure-missing" class="max-h-60 overflow-y-auto text-sm">
-                            <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
-                        </div>
+                    <div class="flex justify-end space-x-3">
+                        <button id="departure-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
+                        <button id="departure-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
 
-    <!-- Entry Modal -->
-    <div id="entry-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
-            <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลามาปฏิบัติราชการ</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="entry-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
-                    <select id="entry-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">-- เลือกรายชื่อ --</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="entry-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
-                    <select id="entry-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="ลงเวลาปฏิบัติงาน">ลงเวลาปฏิบัติงาน</option>
-                        <option value="ลากิจ">ลากิจ</option>
-                        <option value="ลาป่วย">ลาป่วย</option>
-                        <option value="ลาคลอด">ลาคลอด</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-3">
-                    <button id="entry-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
-                    <button id="entry-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
+        <!-- Confirmation Modal -->
+        <div id="confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-xl font-bold text-red-600 mb-4">ยืนยันการบันทึกข้อมูล</h3>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-gray-700 mb-1">รายชื่อ: <span id="confirm-name" class="font-medium"></span></p>
+                        <p class="text-gray-700 mb-1">สถานะ: <span id="confirm-status" class="font-medium"></span></p>
+                        <p class="text-gray-700 mb-1">เวลา: <span id="confirm-time" class="font-medium"></span></p>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button id="confirm-edit" class="btn-secondary px-4 py-2 rounded-lg">แก้ไข</button>
+                        <button id="confirm-submit" class="btn-primary px-4 py-2 rounded-lg">ยืนยัน</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Departure Modal -->
-    <div id="departure-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden">
-        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
-            <h3 class="text-xl font-bold text-red-600 mb-4">ลงเวลากลับ</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="departure-name" class="block text-gray-700 font-medium mb-1">รายชื่อ</label>
-                    <select id="departure-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="">-- เลือกรายชื่อ --</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="departure-status" class="block text-gray-700 font-medium mb-1">สถานะ</label>
-                    <select id="departure-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" disabled>
-                        <option value="ลงเวลากลับ">ลงเวลากลับ</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-3">
-                    <button id="departure-cancel" class="btn-secondary px-4 py-2 rounded-lg">ยกเลิก</button>
-                    <button id="departure-save" class="btn-primary px-4 py-2 rounded-lg">บันทึกข้อมูล</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirmation Modal -->
-    <div id="confirm-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
-            <h3 class="text-xl font-bold text-red-600 mb-4">ยืนยันการบันทึกข้อมูล</h3>
-            <div class="space-y-4">
-                <div>
-                    <p class="text-gray-700 mb-1">รายชื่อ: <span id="confirm-name" class="font-medium"></span></p>
-                    <p class="text-gray-700 mb-1">สถานะ: <span id="confirm-status" class="font-medium"></span></p>
-                    <p class="text-gray-700 mb-1">เวลา: <span id="confirm-time" class="font-medium"></span></p>
-                </div>
-                <div class="flex justify-end space-x-3">
-                    <button id="confirm-edit" class="btn-secondary px-4 py-2 rounded-lg">แก้ไข</button>
-                    <button id="confirm-submit" class="btn-primary px-4 py-2 rounded-lg">ยืนยัน</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    </div> <!-- End of app-content -->
 
     <!-- Custom Alert/Message Box -->
     <div id="custom-alert-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -225,6 +237,33 @@
         let departureChart = null;
         let currentModalType = '';
         
+        // Allowed passwords
+        const VALID_PASSWORDS = [
+            '999999', '3571200022688', '3530100475523', '3180200308371',
+            '3501500154652', '1509901051405', '1509901473130', '3509901439205',
+            '1550400051102', '1501200094631', '1509900991871', '1509901719490',
+            '1509901234691', '1500700139676', '1509901264417', '1500301210415',
+            '3500700240462', '1509970132206', '3509901158711', '1509900162076',
+            '1559900255562', '5501900034812', '1500700133422', '1509900840074',
+            '1509900207070', '3501300114541', '3550300058829', '1509900444411',
+            '3500200616064', '3500900071303', '1560600008618', '1570300140545',
+            '2500300027861', '1509901072429', '1509900086469', '3501200830024',
+            '3501200700830', '3501200184068', '3501500133779', '3540600091155',
+            '1501200010977', '3501100107185', '3509900619145', '1500300098000',
+            '3520200217950', '1509901686346', '1569900001587', '1509901612644',
+            '3510200065131', '3730500646633', '1529900067677', '3501600325378',
+            '3340100517414', '1509900883083', '1550600031270', '1520700075741',
+            '3501500330752', '1509900434874', '1509900276721', '3502000014526',
+            '1570900056278', '1501200101824', '3501200384172', '1571100054581',
+            '1640600268163', '1500300174369', '1509900744032', '1559900362237',
+            '1509900377731', '1509901050522', '1509900521629', '2579900025689',
+            '1501200104599', '1501601148988', '1509970024314', '1509963022719',
+            '1500701278335', '1509900259231', '1509900207029', '3501900257637',
+            '1509900136997', '1509901040209', '1509900119162', '1509970130106',
+            '1529902147643', '3501700211889', '3501500092533', '3510200018451',
+            '3501500027341'
+        ];
+        
         // DOM Elements
         const loadingOverlay = document.getElementById('loading-overlay');
         const entryModal = document.getElementById('entry-modal');
@@ -239,6 +278,10 @@
         const customAlertModal = document.getElementById('custom-alert-modal');
         const customAlertMessage = document.getElementById('custom-alert-message');
         const customAlertOk = document.getElementById('custom-alert-ok');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit');
+        const appContent = document.getElementById('app-content');
 
         // Function to show custom alert
         function showAlert(message) {
@@ -253,11 +296,36 @@
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-            fetchData();
-            setupEventListeners();
+            // Show password modal on load
+            passwordModal.classList.remove('hidden');
+            // Hide main app content until authenticated
+            appContent.classList.add('hidden');
+
+            // Set up event listener for password submission
+            passwordSubmit.addEventListener('click', handlePasswordSubmit);
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handlePasswordSubmit();
+                }
+            });
+            customAlertOk.addEventListener('click', hideAlert); // For custom alert
         });
+
+        async function handlePasswordSubmit() {
+            const enteredPassword = passwordInput.value.trim();
+            if (VALID_PASSWORDS.includes(enteredPassword)) {
+                passwordModal.classList.add('hidden'); // Hide password modal
+                appContent.classList.remove('hidden'); // Show main app content
+                // Now, initialize the app's core functions
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                await fetchData();
+                setupEventListeners();
+            } else {
+                showAlert('รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง');
+                passwordInput.value = ''; // Clear password input
+            }
+        }
         
         // Update date and time display
         function updateDateTime() {
@@ -449,7 +517,7 @@
             }
         }
         
-        // Setup event listeners
+        // Setup event listeners for the main app content
         function setupEventListeners() {
             // Entry button
             document.getElementById('btn-entry').addEventListener('click', () => {
@@ -580,9 +648,6 @@
                     showLoading(false);
                 }
             });
-
-            // Handle custom alert OK button click
-            customAlertOk.addEventListener('click', hideAlert);
         }
         
         // Reset form fields

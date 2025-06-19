@@ -100,12 +100,16 @@
 
             <!-- Main Buttons -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                <!-- Entry Button Card - Visibility controlled by time -->
+                <div id="entry-button-card" class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                   
                     <button id="btn-entry" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
                         ลงเวลามาปฏิบัติราชการ
                     </button>
                 </div>
-                <div class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+                <!-- Departure Button Card - Visibility controlled by time -->
+                <div id="departure-button-card" class="card bg-white rounded-lg shadow-lg p-6 flex flex-col items-center">
+               
                     <button id="btn-departure" class="btn-primary w-full py-4 rounded-lg text-lg font-medium">
                         ลงเวลากลับ
                     </button>
@@ -114,8 +118,8 @@
 
             <!-- Summary Section -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Entry Summary -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
+                <!-- Entry Summary Section - Visibility controlled by time -->
+                <div id="entry-summary-section" class="bg-white rounded-lg shadow-lg p-6">
                     <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลามาปฏิบัติราชการ</h3>
                     <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                         <div class="w-full md:w-1/2">
@@ -130,8 +134,8 @@
                     </div>
                 </div>
                 
-                <!-- Departure Summary -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
+                <!-- Departure Summary Section - Visibility controlled by time -->
+                <div id="departure-summary-section" class="bg-white rounded-lg shadow-lg p-6">
                     <h3 class="text-xl font-bold text-red-600 mb-4">สรุปข้อมูลการลงเวลากลับ</h3>
                     <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                         <div class="w-full md:w-1/2">
@@ -283,15 +287,29 @@
         const passwordSubmit = document.getElementById('password-submit');
         const appContent = document.getElementById('app-content');
 
-        // Function to show custom alert
-        function showAlert(message) {
+        // New DOM elements for time-based visibility
+        const entryButtonCard = document.getElementById('entry-button-card');
+        const departureButtonCard = document.getElementById('departure-button-card');
+        const entrySummarySection = document.getElementById('entry-summary-section');
+        const departureSummarySection = document.getElementById('departure-summary-section');
+
+        // Function to show custom alert (now accepts an optional callback)
+        let currentAlertCallback = null; // Store the callback for the current alert
+
+        function showAlert(message, onOkCallback = null) {
             customAlertMessage.textContent = message;
             customAlertModal.classList.remove('hidden');
+            currentAlertCallback = onOkCallback; // Store the callback
         }
 
         // Function to hide custom alert
         function hideAlert() {
             customAlertModal.classList.add('hidden');
+            // Execute the stored callback if it exists
+            if (currentAlertCallback) {
+                currentAlertCallback();
+                currentAlertCallback = null; // Clear the callback after execution
+            }
         }
         
         // Initialize the application
@@ -308,7 +326,8 @@
                     handlePasswordSubmit();
                 }
             });
-            customAlertOk.addEventListener('click', hideAlert); // For custom alert
+            // The customAlertOk listener will now use the stored callback
+            customAlertOk.addEventListener('click', hideAlert); 
         });
 
         async function handlePasswordSubmit() {
@@ -318,7 +337,12 @@
                 appContent.classList.remove('hidden'); // Show main app content
                 // Now, initialize the app's core functions
                 updateDateTime();
-                setInterval(updateDateTime, 1000);
+                updateVisibilityBasedOnTime(); // Call once initially
+                // Update both date/time and visibility every second
+                setInterval(() => { 
+                    updateDateTime();
+                    updateVisibilityBasedOnTime();
+                }, 1000);
                 await fetchData();
                 setupEventListeners();
             } else {
@@ -354,6 +378,31 @@
                 date: formattedDate,
                 time: `${hours}:${minutes}:${seconds}`
             };
+        }
+
+        // Function to control visibility based on current time
+        function updateVisibilityBasedOnTime() {
+            const currentHour = new Date().getHours();
+
+            // Logic for Entry (มาปฏิบัติราชการ)
+            // Show between 6:00 AM and 9:59 AM
+            if (currentHour >= 6 && currentHour < 10) {
+                entryButtonCard.classList.remove('hidden');
+                entrySummarySection.classList.remove('hidden');
+            } else {
+                entryButtonCard.classList.add('hidden');
+                entrySummarySection.classList.add('hidden');
+            }
+
+            // Logic for Departure (กลับ)
+            // Show between 4:00 PM (16:00) and 7:59 PM (19:59)
+            if (currentHour >= 16 && currentHour < 20) {
+                departureButtonCard.classList.remove('hidden');
+                departureSummarySection.classList.remove('hidden');
+            } else {
+                departureButtonCard.classList.add('hidden');
+                departureSummarySection.classList.add('hidden');
+            }
         }
         
         // Fetch data from Google Sheets
@@ -634,9 +683,14 @@
                     }
                     
                     if (result.success) {
-                        showAlert('บันทึกข้อมูลสำเร็จ');
+                        // On successful save, show alert and then redirect to password page
+                        showAlert('บันทึกข้อมูลสำเร็จ', () => {
+                            appContent.classList.add('hidden'); // Hide app content
+                            passwordModal.classList.remove('hidden'); // Show password modal
+                            passwordInput.value = ''; // Clear password input
+                        });
                         resetForm(currentModalType);
-                        await fetchData(); // Refresh data
+                        // No need to fetchData here as we are going back to password screen
                     } else {
                         console.error('Error from server:', result);
                         showAlert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถบันทึกข้อมูลได้'));
